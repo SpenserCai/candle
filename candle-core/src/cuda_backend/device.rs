@@ -238,10 +238,26 @@ impl CudaDevice {
         }
         drop(ms);
         let mut ms = self.modules.write().unwrap();
-        // Convert bytes to String - for PTX this is valid UTF-8, for CUBIN it's binary data
-        // but CUDA's cuModuleLoadData accepts both
-        let module_data = unsafe { String::from_utf8_unchecked(mdl.as_bytes().to_vec()) };
-        let cuda_module = self.context.load_module(cudarc::nvrtc::Ptx::from_src(module_data)).w()?;
+        
+        // Load module from bytes - works for both PTX (text) and CUBIN (binary)
+        let module_bytes = mdl.as_bytes();
+        let cuda_module = unsafe {
+            // Bind to thread first
+            self.context.bind_to_thread().w()?;
+            
+            // Call cuModuleLoadData directly with raw bytes
+            // This works for both PTX and CUBIN formats
+            let cu_module = cudarc::driver::result::module::load_data(
+                module_bytes.as_ptr() as *const std::ffi::c_void
+            ).w()?;
+            
+            // Wrap in CudaModule
+            std::sync::Arc::new(cudarc::driver::CudaModule {
+                cu_module,
+                ctx: self.context.clone(),
+            })
+        };
+        
         ms.mdls[mdl.index()] = Some(cuda_module.clone());
         let func = cuda_module.load_function(fn_name).w()?;
         Ok(CudaFunc {
