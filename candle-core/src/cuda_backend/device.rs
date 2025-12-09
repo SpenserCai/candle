@@ -218,7 +218,7 @@ impl CudaDevice {
         }
         drop(ms);
         let mut ms = self.custom_modules.write().unwrap();
-        let cuda_module = self.context.load_module(ptx.as_bytes().into()).w()?;
+        let cuda_module = self.context.load_module(ptx.as_bytes().to_vec()).w()?;
         ms.insert(module_name.to_string(), cuda_module.clone());
         let func = cuda_module.load_function(fn_name).w()?;
         Ok(CudaFunc {
@@ -238,7 +238,7 @@ impl CudaDevice {
         }
         drop(ms);
         let mut ms = self.modules.write().unwrap();
-        let cuda_module = self.context.load_module(mdl.as_bytes().into()).w()?;
+        let cuda_module = self.context.load_module(mdl.as_bytes().to_vec()).w()?;
         ms.mdls[mdl.index()] = Some(cuda_module.clone());
         let func = cuda_module.load_function(fn_name).w()?;
         Ok(CudaFunc {

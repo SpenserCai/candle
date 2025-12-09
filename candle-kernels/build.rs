@@ -11,6 +11,9 @@ fn main() {
     println!("cargo::rerun-if-env-changed=CANDLE_CUDA_MODULE_FORMAT");
     println!("cargo::rerun-if-env-changed=CUDA_COMPUTE_CAP");
     println!("cargo::rerun-if-env-changed=CUDA_NVCC_FLAGS");
+    
+    // Declare the cfg for conditional compilation
+    println!("cargo::rustc-check-cfg=cfg(candle_cuda_cubin)");
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     
