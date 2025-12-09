@@ -11,6 +11,7 @@ fn main() {
     println!("cargo::rerun-if-env-changed=CANDLE_CUDA_MODULE_FORMAT");
     println!("cargo::rerun-if-env-changed=CUDA_COMPUTE_CAP");
     println!("cargo::rerun-if-env-changed=CUDA_NVCC_FLAGS");
+    println!("cargo::rerun-if-env-changed=NVCC_CCBIN");
     
     // Declare the cfg for conditional compilation
     println!("cargo::rustc-check-cfg=cfg(candle_cuda_cubin)");
@@ -111,9 +112,13 @@ fn compile_cubin(src: &PathBuf, dst: &PathBuf, compute_cap: &str) {
         .arg("--use_fast_math")
         .arg("--std=c++17")
         .arg("--default-stream").arg("per-thread")
-        .arg("-I").arg("src")
-        .arg("-o").arg(dst)
-        .arg(src);
+        .arg("-I").arg("src");
+    
+    // Handle NVCC_CCBIN environment variable (for custom compiler)
+    if let Ok(ccbin_path) = env::var("NVCC_CCBIN") {
+        cmd.arg("-allow-unsupported-compiler")
+            .arg("-ccbin").arg(ccbin_path);
+    }
     
     // Allow custom compiler flags
     if let Ok(extra_flags) = env::var("CUDA_NVCC_FLAGS") {
@@ -121,6 +126,9 @@ fn compile_cubin(src: &PathBuf, dst: &PathBuf, compute_cap: &str) {
             cmd.arg(flag);
         }
     }
+    
+    cmd.arg("-o").arg(dst)
+        .arg(src);
     
     println!(
         "cargo::warning=Compiling {} -> {}",

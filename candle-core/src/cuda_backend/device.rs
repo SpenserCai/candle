@@ -218,7 +218,7 @@ impl CudaDevice {
         }
         drop(ms);
         let mut ms = self.custom_modules.write().unwrap();
-        let cuda_module = self.context.load_module(ptx.as_bytes().to_vec()).w()?;
+        let cuda_module = self.context.load_module(ptx.into()).w()?;
         ms.insert(module_name.to_string(), cuda_module.clone());
         let func = cuda_module.load_function(fn_name).w()?;
         Ok(CudaFunc {
@@ -238,7 +238,10 @@ impl CudaDevice {
         }
         drop(ms);
         let mut ms = self.modules.write().unwrap();
-        let cuda_module = self.context.load_module(mdl.as_bytes().to_vec()).w()?;
+        // Convert bytes to String - for PTX this is valid UTF-8, for CUBIN it's binary data
+        // but CUDA's cuModuleLoadData accepts both
+        let module_data = unsafe { String::from_utf8_unchecked(mdl.as_bytes().to_vec()) };
+        let cuda_module = self.context.load_module(cudarc::nvrtc::Ptx::from_src(module_data)).w()?;
         ms.mdls[mdl.index()] = Some(cuda_module.clone());
         let func = cuda_module.load_function(fn_name).w()?;
         Ok(CudaFunc {
