@@ -63,6 +63,11 @@ impl Module {
         self.index
     }
 
+    /// Get the module data format
+    pub fn data(&self) -> &ModuleData {
+        &self.data
+    }
+
     /// Get module data as bytes (works for both PTX and CUBIN)
     /// This is the recommended method for loading modules
     pub fn as_bytes(&self) -> &'static [u8] {

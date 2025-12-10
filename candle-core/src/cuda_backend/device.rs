@@ -239,27 +239,14 @@ impl CudaDevice {
         drop(ms);
         let mut ms = self.modules.write().unwrap();
         
-        // Load module from bytes - works for both PTX (text) and CUBIN (binary)
-        let module_bytes = mdl.as_bytes();
-        
-        // For PTX: can load directly from string
-        // For CUBIN: need to write to temp file because it contains null bytes
-        let ptx = if module_bytes.starts_with(b".version") || module_bytes.starts_with(b".target") {
-            // PTX format - safe to convert to string
-            let ptx_str = std::str::from_utf8(module_bytes)
-                .map_err(|_| CudaError::InternalError("Invalid PTX UTF-8"))?;
-            cudarc::nvrtc::Ptx::from_src(ptx_str)
-        } else {
-            // CUBIN format - write to temp file and load from file
-            // This is necessary because CUBIN contains null bytes which break CString
-            use std::io::Write;
-            let temp_dir = std::env::temp_dir();
-            let temp_file = temp_dir.join(format!("candle_cubin_{}.cubin", mdl.index()));
-            let mut file = std::fs::File::create(&temp_file)
-                .map_err(|e| CudaError::InternalError("Failed to create temp CUBIN file"))?;
-            file.write_all(module_bytes)
-                .map_err(|e| CudaError::InternalError("Failed to write temp CUBIN file"))?;
-            cudarc::nvrtc::Ptx::from_file(temp_file)
+        // Load module based on format (PTX or CUBIN)
+        let ptx = match mdl.data() {
+            kernels::ModuleData::Ptx(ptx_str) => {
+                cudarc::nvrtc::Ptx::from_src(*ptx_str)
+            }
+            kernels::ModuleData::Cubin(cubin_bytes) => {
+                cudarc::nvrtc::Ptx::from_binary(cubin_bytes.to_vec())
+            }
         };
         
         let cuda_module = self.context.load_module(ptx).w()?;
