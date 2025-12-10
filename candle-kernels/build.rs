@@ -33,7 +33,7 @@ fn build_ptx_modules(out_dir: &PathBuf) {
     
     let ptx_path = out_dir.join("ptx.rs");
     let builder = bindgen_cuda::Builder::default();
-    println!("cargo::info={builder:?}");
+    println!("cargo::warning={builder:?}");
     
     let bindings = builder.build_ptx()
         .expect("Failed to build PTX modules with bindgen_cuda");
@@ -51,7 +51,7 @@ fn build_cubin_modules(out_dir: &PathBuf) {
     
     let cubin_path = out_dir.join("cubin.rs");
     let builder = bindgen_cuda::Builder::default();
-    println!("cargo::info={builder:?}");
+    println!("cargo::warning={builder:?}");
     
     let bindings = builder.build_cubin()
         .expect("Failed to build CUBIN modules with bindgen_cuda");
