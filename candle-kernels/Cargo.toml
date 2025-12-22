@@ -12,4 +12,4 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 
 [build-dependencies]
-bindgen_cuda = { git = "https://github.com/SpenserCai/bindgen_cuda", branch = "patch_use_outfile" }
+bindgen_cuda = { git = "https://github.com/SpenserCai/bindgen_cuda", branch = "support_build_cubin" }
